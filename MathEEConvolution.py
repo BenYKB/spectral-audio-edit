@@ -1,31 +1,33 @@
-
-
-from scipy.fftpack import fft, ifft
+import numpy as np
 from scipy.io import wavfile
 
 n = 0
 # importing the sound files
-fs, IR1 = wavfile.read('C:\\Users\\Benjamin\\Desktop\\MtRoyalStairs.wav')
-fs1, S1 = wavfile.read('C:\\Users\\Benjamin\\Desktop\\SSexcerpt.wav')
+fs, IR1 = wavfile.read(r'C:\Users\elber\Documents\AudioRecordings\cyo_ir.wav')
+fs1, S1 = wavfile.read(r'C:\Users\elber\Documents\AudioRecordings\input_signal.wav')
 
-h1 = IR1.T
-x1 = S1.T[0]
-m = len(x1) - len(h1)
+assert(fs == fs1)
+print(fs)
 
-samples = len(h1)
-if len(x1) < samples:
-    samples = len(x1)
-# taking FFT
-Fh1 = fft(h1[:samples])
-Fx1 = fft(x1[:samples])
+t_impulse_response = np.array(IR1, dtype=np.float32)
+t_signal = np.array(S1, dtype=np.float32)
 
-Fy1 = []
-# multiplication in frequency domain
-while n < samples:
-    Fy1.append(Fh1[n]*Fx1[n])
-    n += 1
-# taking inverse FFT
-y1 = ifft(Fy1).real
-test = abs(ifft(Fx1))
-# exporting file with convolution reverb
-wavfile.write('C:\\Users\\Benjamin\\Desktop\\outputoboe.wav', 48000, y1)
+signal_power = np.trapz((t_signal ** 2)) ** 0.5
+ir_power = np.trapz((t_impulse_response ** 2)) ** 0.5
+print(ir_power)
+
+signal_strength = 50
+t_signal = t_signal / signal_power * signal_strength
+t_impulse_response = t_impulse_response / ir_power
+
+t_signal = np.pad(t_signal, (0, t_impulse_response.size))
+padding = t_signal.size - t_impulse_response.size
+t_impulse_response = np.pad(t_impulse_response, (0, padding))
+
+f_impulse_response = np.fft.fft(t_impulse_response)
+f_signal = np.fft.fft(t_signal)
+
+f_result = f_impulse_response * f_signal
+t_result = np.real(np.fft.ifft(f_result, f_signal.size))
+
+wavfile.write(r'C:\Users\elber\Documents\AudioRecordings\convolutionOutput.wav', fs, t_result)
