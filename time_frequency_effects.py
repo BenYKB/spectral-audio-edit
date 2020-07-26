@@ -16,6 +16,7 @@ class TimeFrequencyEffects:
         out = phases.copy()
 
         # syn phase at t = syn phase t-1 + syn hop * true freq
+        # TODO: implement as a complex exponential multiple of the cartsian stft
         for i in range(1,l):
             out[i] = out[i-1] + synthesis_hop * true_freqs[i-1]  # true freqs should be 1 shorter than phases so this is really t_f[i]
 

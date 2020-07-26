@@ -12,6 +12,9 @@ print(fs)
 t_impulse_response = np.array(IR1, dtype=np.float32)
 t_signal = np.array(S1, dtype=np.float32)
 
+print(t_signal)
+print(np.max(t_signal))
+
 signal_power = np.trapz((t_signal ** 2)) ** 0.5
 ir_power = np.trapz((t_impulse_response ** 2)) ** 0.5
 print(ir_power)
