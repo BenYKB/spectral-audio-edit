@@ -20,7 +20,7 @@ def polar_to_cartesian(magnitudes, angles):
     :return: 2-d numpy of cartesian coordinates
     """
 
-    return magnitudes * (np.complex(np.cos(angles), np.sin(angles)))
+    return magnitudes * np.exp(1j * angles)
 
 
 class ShortTimeFourierTransform:
