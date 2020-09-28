@@ -1,4 +1,4 @@
-from window import *
+import window as win
 import numpy as np
 
 
@@ -25,21 +25,25 @@ def polar_to_cartesian(magnitudes, angles):
 
 class ShortTimeFourierTransform:
     def __init__(self, window_length):
-        self._w = Window(window_length)
+        self._w = win.Window(window_length)
 
-    def apply(self, signal, analysis_hop_length):
+    def apply(self, signal, analysis_hop_length, window_type=win.Windows.HANN):
         """
         Apply short time fourier transform
         :param signal: 1-d numpy array time series
+        :param analysis_hop_length: distance between stft frames
+        :param window_type: type of windowing to use in Windows enumeration
         :return: 2-d numpy array short time fourier transform
         """
-        frames = center(
-                    self._w.hann(
-                        self._w.subsets(signal, analysis_hop_length)))
+        frames = win.center(
+            self._w.apply(
+                self._w.subsets(signal, analysis_hop_length),
+                window_type))
+
         output = np.fft.rfft(frames)
         return output
 
-    def apply_inverse(self, stft_cartesian, synthesis_hop_length):
+    def apply_inverse(self, stft_cartesian, synthesis_hop_length, window_type=win.Windows.HANN, normalize=True):
         """
         Invert the short time fourier transform
         :param stft: 2-d numpy array short time fourier transform in cartesian coordinates
@@ -51,24 +55,19 @@ class ShortTimeFourierTransform:
 
         out = np.zeros(output_length, dtype=np.float32)
         norm = np.zeros(output_length, dtype=np.float32)
-        w_norm = self._w.hann(np.ones(self.window_length())) ** 2
+        w_norm = self._w.apply(np.ones(self.window_length()), window_type) ** 2
 
         for i_frame in np.arange(number_of_frames):
             i_out = i_frame * synthesis_hop_length
-            out[i_out:i_out+self.window_length()] += self._w.hann(
-                                                        invert_center(
-                                                            np.fft.irfft(stft_cartesian[i_frame],
-                                                                         self.window_length())))
-            norm[i_out:i_out+self.window_length()] += w_norm
+            out[i_out:i_out + self.window_length()] += self._w.apply(
+                win.invert_center(np.fft.irfft(stft_cartesian[i_frame], self.window_length())),
+                window_type)
+
+            if normalize:
+                norm[i_out:i_out + self.window_length()] += w_norm
 
         norm[0] = 1
-        return out / norm
+        return out / norm if normalize else out
 
     def window_length(self):
         return self._w.length()
-
-
-
-
-
-

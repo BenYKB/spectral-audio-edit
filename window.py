@@ -1,3 +1,5 @@
+from enum import Enum
+
 import numpy as np
 
 
@@ -48,10 +50,17 @@ def invert_center(centered_signal):
         return np.apply_along_axis(invert_center, 1, centered_signal)
 
 
+class Windows(Enum):
+    RECTANGLE = 0
+    HANN = 1
+    HAMMING = 2
+
+
 class Window:
     def __init__(self, length):
         self._length = length
         self._hann = self._get_hann()
+        self._hamm = self._get_hamming()
 
     def _get_hann(self):
         """
@@ -59,11 +68,36 @@ class Window:
         :return: numpy array, a hanning window
         """
         times = np.arange(self._length)
-        return np.sin(times * np.pi / (self._length)) ** 2
+        window = np.sin(times * np.pi / (self._length)) ** 2
+
+        return window / np.sum(window)
+
+    def _get_hamming(self):
+        times = np.arange(self._length)
+        window = 0.54 - 0.46 * np.cos(2 * np.pi * times / self._length)
+
+        return window / np.sum(window)
+
+    def hamming(self, signal):
+        """Returns signal windowed by periodic Hamming window"""
+        return signal * self._hamm
 
     def hann(self, signal):
-        """Returns signal windowed by Hann window"""
+        """Returns signal windowed by periodic Hann window"""
         return signal * self._hann
+
+    def apply(self, signal, window_type=Windows.HANN):
+        if window_type is Windows.HANN:
+            return self.hann(signal)
+
+        if window_type is Windows.HAMMING:
+            return self.hamming(signal)
+
+        if window_type is Windows.RECTANGLE:
+            return signal
+
+        else:
+            raise ValueError("Invalid window type. Expected member of Windows enumeration")
 
     def length(self):
         return self._length

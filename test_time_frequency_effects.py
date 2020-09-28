@@ -1,5 +1,5 @@
 from unittest import TestCase
-from time_frequency_effects import *
+from phase_vocoder import *
 from short_time_fourier_transform import *
 import numpy as np
 import matplotlib.pyplot as plt
