@@ -34,7 +34,7 @@ class harmonic_profile:
         #
 
 
-def extract_harmonics(signal, sample_rate, cutoff_freq=30, peak_radius=50, peak_number=7):
+def extract_harmonics(signal, sample_rate, cutoff_freq=30, peak_radius=30, peak_number=20):
     f_sig = np.fft.rfft(signal)
     cutoff_bin = frequency_to_nearest_bin(cutoff_freq, signal.size, sample_freq=sample_rate)
 
@@ -100,43 +100,62 @@ if __name__ == '__main__':
 
         sound_samples.append(hamming * subset(sig, c - radius, c + radius))
 
+    sound_samples = np.array(sound_samples)
+    sound_samples = np.abs(np.fft.rfft(sound_samples))
+
+    for s in sound_samples:
+        plt.plot(np.arange(s.size), s)
+        plt.show()
+        thirty_hz_cutoff = int(30.0 / 44100.0 * sample_size)
+        five_khz_cutoff = int(5000.0 / 44100.0 * sample_size)
+        h, hs = harmonic_comb_fundemental(s, lowerbound_index=thirty_hz_cutoff, upperbound_index=five_khz_cutoff, interpolate=True)
+        harmonic_cutoff = 0.01
+
+        print(h)
+        print(hs)
+
+        plt.plot(np.arange(len(hs)), hs)
+        plt.hlines(harmonic_cutoff,0,20)
+        plt.show()
+
+
 
     #f_0, harmonics = harmonic_comb_fundemental(np.abs(np.fft.rfft(sound_samples[0])))
 
 
-    path = r'C:\Users\elber\Documents\AudioRecordings\PhilharmoniaSamples\oboe\macro-output'
-
-    thirty_hz_cutoff = int(30.0 / 44100.0 * sample_size)
-    five_khz_cutoff = int(5000.0 / 44100.0 * sample_size)
-    pattern = re.compile("As3")
-    illegal_patterns = re.compile("trill|phrase")
-
-    data = []
-
-    for filename in os.listdir(path):
-        if pattern.search(filename) and not illegal_patterns.search(filename):
-            print(f"read {filename}")
-            rate, sig = wavfile.read(os.path.join(path, filename))
-            center = get_center_of_interest(sig)
-            sample = np.pad(hamming * subset(sig, center -radius, center + radius), (sample_size*2, sample_size))
-            abs_ft = np.abs(np.fft.rfft(sample))
-            eps = np.average(abs_ft)
-
-            f_0, harmonics = harmonic_comb_fundemental(abs_ft, lowerbound_index=thirty_hz_cutoff, upperbound_index=five_khz_cutoff, interpolate=True)
-
-            data.append((f_0 / sample_size * rate, harmonics, eps, filename))
-
-            harmonics = harmonics / harmonics[0]
-            fs = (f_0 * np.arange(1, harmonics.size + 1))[0:5]
-            log_harmonics = np.log(harmonics[0:5] + eps*np.ones(5))
-
-            plt.plot(fs, log_harmonics, marker='|')
-            plt.hlines(np.log(eps), 0,400)
-            #plt.show()
-
-    plt.show()
-
-    print(data)
+    # path = r'C:\Users\elber\Documents\AudioRecordings\PhilharmoniaSamples\oboe\macro-output'
+    #
+    # thirty_hz_cutoff = int(30.0 / 44100.0 * sample_size)
+    # five_khz_cutoff = int(5000.0 / 44100.0 * sample_size)
+    # pattern = re.compile("As3")
+    # illegal_patterns = re.compile("trill|phrase")
+    #
+    # data = []
+    #
+    # for filename in os.listdir(path):
+    #     if pattern.search(filename) and not illegal_patterns.search(filename):
+    #         print(f"read {filename}")
+    #         rate, sig = wavfile.read(os.path.join(path, filename))
+    #         center = get_center_of_interest(sig)
+    #         sample = np.pad(hamming * subset(sig, center -radius, center + radius), (sample_size*2, sample_size))
+    #         abs_ft = np.abs(np.fft.rfft(sample))
+    #         eps = np.average(abs_ft)
+    #
+    #         f_0, harmonics = harmonic_comb_fundemental(abs_ft, lowerbound_index=thirty_hz_cutoff, upperbound_index=five_khz_cutoff, interpolate=True)
+    #
+    #         data.append((f_0 / sample_size * rate, harmonics, eps, filename))
+    #
+    #         harmonics = harmonics / harmonics[0]
+    #         fs = (f_0 * np.arange(1, harmonics.size + 1))[0:5]
+    #         log_harmonics = np.log(harmonics[0:5] + eps*np.ones(5))
+    #
+    #         plt.plot(fs, log_harmonics, marker='|')
+    #         plt.hlines(np.log(eps), 0,400)
+    #         #plt.show()
+    #
+    # plt.show()
+    #
+    # print(data)
 
     #we want to store (file_name, f_0 in hz, harmonic strengths (raw), avg_mag)
     '''we want to reject files labled trill or phrase'''

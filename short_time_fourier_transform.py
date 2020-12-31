@@ -40,6 +40,8 @@ class ShortTimeFourierTransform:
                 self._w.subsets(signal, analysis_hop_length),
                 window_type))
 
+        #TODO: implement option to add centered padding
+
         output = np.fft.rfft(frames)
         return output
 

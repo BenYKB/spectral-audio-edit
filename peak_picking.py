@@ -60,6 +60,8 @@ def harmonic_comb_fundemental(ft_sig, comb_peaks=7, interpolate=True, lowerbound
     :return:
     '''
 
+    ft_sig = ft_sig / np.sum(ft_sig)
+
     X = whiten_spectrum(np.abs(ft_sig), rate)
     signal_length = X.size
     eps = np.average(X[0:signal_length//3])
@@ -128,16 +130,18 @@ def harmonic_comb_fundemental(ft_sig, comb_peaks=7, interpolate=True, lowerbound
 
     n = signal_length//likely_indexed_f
     long_comb = f_0 * np.arange(1, n+1)
-    return f_0, X_interp(long_comb)
+
+    harmonics = X_interp(long_comb)
+    return f_0, harmonics/np.sum(harmonics)
 
 
-def historgram_fundemental(peaks, selectivity=2):
+def histogram_fundemental(peaks, selectivity=2):
     '''
     Estimates fundemental frequency from harmonic peaks
     Histogram Method: https://ccrma.stanford.edu/~jos/pasp/Fundamental_Frequency_Estimation.html
     :param peaks: numpy array
     :param selectivity: greater or equal to 2. How small the histogram bins are
-    :return: most likely fundmental of the passed peaks
+    :return: most likely fundemental of the passed peaks
     '''
     if peaks.size < 2:
         return None

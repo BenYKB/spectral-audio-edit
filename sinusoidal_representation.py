@@ -51,7 +51,8 @@ def put_in_set_or_make_new(dictionary, key, value):
         dictionary[key] = {value}
 
 
-
+def sinusoids_at_time(tracks, t):
+    pass
 
 
 class SinusoidalRepresentation:
@@ -210,16 +211,20 @@ if __name__ == '__main__':
     rate, signal = wavfile.read(r'C:\Users\elber\Documents\AudioRecordings\input_signal_32.wav')
     signal = np.pad(signal, (2048 * 2, 2048 * 2))
 
+    ##
+    ## Analysis Section
+    ##
+
     envelope = get_time_series_envelope(signal, rate)
 
     note_activation = 0.13
 
-    plt.plot(np.arange(signal.size), signal)
-    plt.plot(np.arange(envelope.size), envelope)
-    plt.axhline(note_activation)
-    plt.title('Original signal')
-    plt.show()
-    plt.clf()
+    # plt.plot(np.arange(signal.size), signal)
+    # plt.plot(np.arange(envelope.size), envelope)
+    # plt.axhline(note_activation)
+    # plt.title('Original signal')
+    # plt.show()
+    # plt.clf()
 
     print(f'max in input: {np.amax(signal)}')
     assert (signal.dtype == np.float32)
@@ -262,7 +267,7 @@ if __name__ == '__main__':
 
         peak_phases = np.angle(np.take(current_stft, peaks_index))
 
-        fundemental = historgram_fundemental(peaks_index)
+        fundemental = histogram_fundemental(peaks_index)
         if fundemental:
             wt.append((fundemental, frame_step * analysis_step))
 
@@ -338,41 +343,158 @@ if __name__ == '__main__':
 
     #plt.show()
 
+    ##
+    ## Editing Section
+    ##
+
+    upper_w = 5000 / rate * 2 * np.pi
+    lower_w = 30 / rate * 2 * np.pi
+
+    sinusoid_frames = []
+    fundemental_sinusoids = []
+
+    for t in np.arange(signal.size, step=analysis_step):
+        current_tracks = filter(lambda x: x is not None and x.is_defined_at_time(t), tracks)
+        current_sinusoids = list(map(lambda x: x.get_nearest_sinusoid(t), current_tracks))
+        current_sinusoids.sort(key=lambda x: (x.w, -x.a))
+
+        candidate_s = list(filter(lambda x: upper_w > x.w > lower_w, current_sinusoids))
+        candidate_a = np.fromiter(map(lambda x: x.w,candidate_s), dtype=float)
+
+        f_0_estimation = histogram_fundemental(candidate_a)
+
+        if f_0_estimation:
+            f_0_sinusoid = next(filter(lambda x: np.isclose(x.w, f_0_estimation), candidate_s))
+        else:
+            f_0_sinusoid = None
+
+        sinusoid_frames.append(current_sinusoids)
+        fundemental_sinusoids.append(f_0_sinusoid)
+
+    # print(f'sinusoid frames size {len(sinusoid_frames)}')
+    # print(f'f_0 sinusoid size {len(fundemental_sinusoids)}')
+    #
+    # print(sinusoid_frames)
+    # print(fundemental_sinusoids)
+
+    ts = np.arange(len(fundemental_sinusoids))
+    ws = np.array([s.w if s else 0 for s in fundemental_sinusoids])
+    amps = np.array([s.a if s else 0 for s in fundemental_sinusoids])
+
+    ws = ws / np.amax(ws)
+    amps = amps / np.amax(amps)
+
+    plt.plot(ts, ws)
+    plt.plot(ts, amps)
+    plt.show()
+    plt.clf()
+
+    # n = 70
+    # sinus = sinusoid_frames[n]
+    # s_w = list(map(lambda x: x.w, sinus))
+    # s_a = list(map(lambda x: x.a, sinus))
+    # plt.vlines(fundemental_sinusoids[n].w,0,np.amax(s_a))
+    # plt.plot(s_w,s_a)
+    # plt.show()
+    # plt.clf()
+    # n = 80
+    # sinus = sinusoid_frames[n]
+    # s_w = list(map(lambda x: x.w, sinus))
+    # s_a = list(map(lambda x: x.a, sinus))
+    # plt.vlines(fundemental_sinusoids[n].w,0,np.amax(s_a))
+    # plt.plot(s_w,s_a)
+    # plt.show()
+    # plt.clf()
+    # n = 90
+    # sinus = sinusoid_frames[n]
+    # s_w = list(map(lambda x: x.w, sinus))
+    # s_a = list(map(lambda x: x.a, sinus))
+    # plt.vlines(fundemental_sinusoids[n].w,0,np.amax(s_a))
+    # plt.plot(s_w,s_a)
+    # plt.show()
+    # plt.clf()
+    # n = 100
+    # sinus = sinusoid_frames[n]
+    # s_w = list(map(lambda x: x.w, sinus))
+    # s_a = list(map(lambda x: x.a, sinus))
+    # plt.vlines(fundemental_sinusoids[n].w,0,np.amax(s_a))
+    # plt.plot(s_w,s_a)
+    # plt.show()
+    # plt.clf()
+    # n = 110
+    # sinus = sinusoid_frames[n]
+    # s_w = list(map(lambda x: x.w, sinus))
+    # s_a = list(map(lambda x: x.a, sinus))
+    # plt.vlines(fundemental_sinusoids[n].w,0,np.amax(s_a))
+    # plt.plot(s_w,s_a)
+    # plt.show()
+    # plt.clf()
+    # n = 120
+    # sinus = sinusoid_frames[n]
+    # s_w = list(map(lambda x: x.w, sinus))
+    # s_a = list(map(lambda x: x.a, sinus))
+    # plt.vlines(fundemental_sinusoids[n].w,0,np.amax(s_a))
+    # plt.plot(s_w,s_a)
+    # plt.show()
+    # plt.clf()
+
+
+    # for s in range(len(fundemental_sinusoids)):
+    #     w =
+
+
+
+        # TODO: consider comb fundemental f_0 analysis with entire frame
+        #
+
+
+
+
+
     # no fundementals above 5000 hz for sure!
     # no fundmentals below 30
-    upper_w = 5000 / 44100 * 2 * np.pi
-    lower_w = 30 / 44100 * 2 * np.pi
+    #
+    #
+    # upper_w = 5000 / 44100 * 2 * np.pi
+    # lower_w = 30 / 44100 * 2 * np.pi
+    #
+    # track_sinusoids = np.array([s for track in tracks for s in track.sinusoids])
+    # print(f'{track_sinusoids.size} vs. {len(tracks)}')
+    #
+    # fundemental_w_t = [(histogram_fundemental(
+    #     np.fromiter(
+    #         map(lambda x: x.get_nearest_sinusoid(t).w,
+    #             filter(lambda x: x is not None and
+    #                              x.is_defined_at_time(t) and
+    #                              upper_w > x.get_nearest_sinusoid(t).w > lower_w,
+    #                    tracks)
+    #             ),
+    #         dtype=float)), t)
+    #     for t in np.arange(signal.size, step=analysis_step)]
+    #
+    # fundemental_w_t = list(filter(lambda x: x[0] is not None, fundemental_w_t))
+    #
+    # fundemental_w_a = [(w, (next(filter(lambda s: s.t == t and np.isclose(s.w, w).all(), track_sinusoids), None)).a) for
+    #                    (w, t) in fundemental_w_t]
+    #
+    # print(fundemental_w_a)
+    # fundemental_w = [x[0] * rate / (2 * np.pi) if x[0] is not None else None for x in fundemental_w_a]
+    # fundemental_a = [x[1] for x in fundemental_w_a]
+    #
+    # print(f'None in f_w? {np.where(np.array(fundemental_w)is None)}')
+    # print(f'None in f_a? {np.where(np.array(fundemental_a)is None)}')
+    #
+    # plt.plot(np.arange(len(fundemental_w)), fundemental_w)
+    # plt.show()
+    # plt.clf()
+    # plt.plot(np.arange(len(fundemental_a)), fundemental_a)
+    # plt.show()
+    #
+    # plt.clf()
 
-    track_sinusoids = np.array([s for track in tracks for s in track.sinusoids])
-    print(f'{track_sinusoids.size} vs. {len(tracks)}')
-
-    fundemental_w_t = [(historgram_fundemental(
-        np.fromiter(
-            map(lambda x: x.get_nearest_sinusoid(t).w,
-                filter(lambda x: x is not None and
-                                 x.is_defined_at_time(t) and
-                                 upper_w > x.get_nearest_sinusoid(t).w > lower_w,
-                       tracks)
-                ),
-            dtype=float)), t)
-        for t in np.arange(signal.size, step=analysis_step)]
-
-    fundemental_w_t = list(filter(lambda x: x[0] is not None, fundemental_w_t))
-
-    fundemental_w_a = [(w, (next(filter(lambda s: s.t == t and np.isclose(s.w, w).all(), track_sinusoids), None)).a) for
-                       (w, t) in fundemental_w_t]
-
-    print(fundemental_w_a)
-    fundemental_w = [x[0] * rate / (2 * np.pi) if x[0] is not None else None for x in fundemental_w_a]
-    fundemental_a = [x[1] for x in fundemental_w_a]
-
-    plt.plot(np.arange(len(fundemental_w)), fundemental_w)
-    plt.show()
-    plt.clf()
-    plt.plot(np.arange(len(fundemental_a)), fundemental_a)
-    plt.show()
-
-    plt.clf()
+    ##
+    ## SYNTHESIS SECTION
+    ##
 
     synthesis_signal = np.zeros(signal.size, dtype=np.float32)
     print(f'out size {synthesis_signal.size}')
@@ -402,5 +524,5 @@ if __name__ == '__main__':
     plt.title('residual')
     plt.show()
 
-    wavfile.write(r'C:\Users\elber\Documents\AudioRecordings\sin_rep_output.wav', rate, synthesis_signal)
+    wavfile.write(r'C:\Users\elber\Documents\AudioRecordings\sin_rep_output_with_mod.wav', rate, synthesis_signal)
     wavfile.write(r'C:\Users\elber\Documents\AudioRecordings\sin_rep_residual.wav', rate, residual)
